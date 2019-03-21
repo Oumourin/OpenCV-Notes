@@ -295,7 +295,130 @@ cv.imshow("div_result", div_result);
 Python下创建空白矩阵利用numpy下的zeros方法
 
 * 参数一：第一张图像
-
 * 参数二：第二张图像
-
 * 参数三：输出结果
+
+
+
+#  Day6
+
+##  Look Up Table(LUT)查找表
+
+![LUT](https://image.nuccombat.cn/images/2019/03/21/Fk5_5JvkflTl70xmC3E-aJqw7fEte1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDEt-s5NPkIOv9DaPxEI9aCj1MUnQ.png)
+
+节省算力，将数据快速转化
+
+###  C++实现
+
+####  利用LUT将灰度图像变为二值图像
+
+```c++
+void customColorMap(Mat &image) {
+	int lut[256];
+	for (int i = 0; i < 256; i++) {
+		if (i < 127)
+			lut[i] = 0;
+		else
+			lut[i] = 255;
+	}
+
+	int h = image.rows;
+	int w = image.cols;
+	for (int row = 0; row < h; row++) {
+		for (int col = 0; col < w; col++) {
+			int pv = image.at<uchar>(row, col);
+			image.at<uchar>(row, col) = lut[pv];
+		}
+	}
+	imshow("lut demo", image);
+}
+```
+
+####  利用OpenCV API实现LUT
+
+```c++
+applyColorMap(src, dst, COLORMAP_SUMMER);
+```
+
+###  Python实现
+
+####  利用OpenCV API实现LUT
+
+```python
+cv.applyColorMap(src, cv.COLORMAP_COOL)
+```
+
+
+
+#  Day7
+
+##  像素操作之逻辑操作
+
+*  bitwise_and
+* bitwise_xor
+* bitwise_or
+
+
+
+![](https://image.nuccombat.cn/images/2019/03/21/FskkWDxOASUd699oiRsOVrh_3vMFe1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDtvoeihWcbbs8VcdeOURur9tmL2M.png)
+
+以上为两张图像的操作
+
+*  bitwise_not
+
+以上针对一张图像操作
+
+##  C++实现
+
+###  创建demo图片
+
+```c++
+	Mat src1 = Mat::zeros(Size(400, 400), CV_8UC3);
+	Rect rect(100, 100, 100, 100);
+	src1(rect) = Scalar(0, 0, 255);
+```
+
+### 两张图运算
+
+```
+	bitwise_and(src1, src2, dst1);
+	bitwise_xor(src1, src2, dst2);
+	bitwise_or(src1, src2, dst3);
+```
+
+### 一张图取反操作
+
+```c++
+	bitwise_and(src1, src2, dst1);
+	bitwise_xor(src1, src2, dst2);
+	bitwise_or(src1, src2, dst3);
+```
+
+*  bitwise_not 常用于对二值图像取反操作
+
+* bitwise_and 常用于取特定区域，尤其对于不规则图像
+
+## Python实现
+
+###  创建demo图片
+
+```python
+src1 = np.zeros(shape=[400, 400, 3], dtype=np.uint8)
+src1[100:200, 100:200, 1] = 255
+src1[100:200, 100:200, 2] = 255
+```
+
+###  两张图运算
+
+```python
+dst1 = cv.bitwise_and(src1, src2)
+dst2 = cv.bitwise_xor(src1, src2)
+dst3 = cv.bitwise_or(src1, src2)
+```
+
+###  一张图运算
+
+```python
+dst = cv.bitwise_not(src)
+```
+
