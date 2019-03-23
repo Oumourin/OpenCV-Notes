@@ -422,3 +422,147 @@ dst3 = cv.bitwise_or(src1, src2)
 dst = cv.bitwise_not(src)
 ```
 
+#  Day8
+
+##  通道分离与合并
+
+OpenCV中默认imread函数加载图像文件，加载进来的是三通道彩色图像，色彩空间是RGB色彩空间、通道顺序是BGR（蓝色、绿色、红色）、对于三通道的图像OpenCV中提供了两个API函数用以实现通道分离与合并。
+
+###  相关函数
+
+* split	//通道分离
+* merge    //通道合并
+
+![](https://image.nuccombat.cn/images/2019/03/23/Fv8RQhGQWRpF54z4S7FLRzANYCnae1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDQmxdARaw8qTeFojLyHpdWaI6SSI.png)
+
+###  C++实现
+
+####  通道分离与合并
+
+```c++
+	vector<Mat> mv;
+	Mat dst1, dst2, dst3;
+	// 蓝色通道为零
+	split(src, mv);
+	mv[0] = Scalar(0);
+	merge(mv, dst1);
+	imshow("output1", dst1);
+
+	// 绿色通道为零
+	split(src, mv);
+	mv[1] = Scalar(0);
+	merge(mv, dst2);
+	imshow("output2", dst2);
+
+	// 红色通道为零
+	split(src, mv);
+	mv[2] = Scalar(0);
+	merge(mv, dst3);
+	imshow("output3", dst3);
+```
+
+C++中利用vector来存储分离出的通道，之后利用Scalar设置单独的通道值
+
+###  Python实现
+
+通道分离与合并
+
+```python
+# 蓝色通道为零
+mv = cv.split(src)
+mv[0][:, :] = 0
+dst1 = cv.merge(mv)
+cv.imshow("output1", dst1)
+
+# 绿色通道为零
+mv = cv.split(src)
+mv[1][:, :] = 0
+dst2 = cv.merge(mv)
+cv.imshow("output2", dst2)
+
+# 红色通道为零
+mv = cv.split(src)
+mv[2][:, :] = 0
+dst3 = cv.merge(mv)
+cv.imshow("output3", dst3)
+
+dst = np.zeros(src.shape, dtype=np.uint8)
+print(src.shape)
+print(src.shape)
+cv.mixChannels([src], [dst], fromTo=[2, 0, 1, 1, 0, 2])
+cv.imshow("Dst", dst)
+```
+
+注：*split*函数分离出来的图像是单通道图像，对于多余通道采取填充该通道相同数值方式，故直接输出mv[0]等实质上会得到灰度图，*mixchannels*函数为混合通道函数，fromTo参数在这里表示，将src的2通道赋给dst的0通道，将1通道给dst的1通道，将0通道给dst的2通道
+
+#  Day9
+
+##  色彩空间与色彩空间转换
+
+知识点： 色彩空间与色彩空间转换
+- RGB色彩空间
+- HSV色彩空间
+- YUV色彩空间
+- YCrCb色彩空间
+
+API知识点
+- 色彩空间转换cvtColor
+- 提取指定色彩范围区域inRange
+
+RGB为最常用的色彩空间，HSV在常常应用于直方图处理中，YUV色彩空间为欧洲电视标准，也用于Android的摄像头系统，YCrCb色彩空间用于皮肤检测等，有色人种皮肤检测会有很好效果
+
+![](https://image.nuccombat.cn/images/2019/03/23/Fo15__R6kQoB2YOyg0mw17Lp8CQUe1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDskYQ1F4Qb-mX_5kDBWxO5hTQ0F4.png)
+
+HSV在理论上是0-360，在OpenCV中为了面向工程，采取了0-180的范围，在损失可以接受情况下，避免空间的浪费。通过HSV色彩空间，可以很方便提取出特定颜色
+
+![](https://image.nuccombat.cn/images/2019/03/23/FqAwsdZTYFXlWwVybyH3s_iCiQzbe1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDKsPEeYW1z5BTxI-PqBwyNlSAC0s.png)
+
+###  C++实现
+
+```c++
+	Mat hsv;
+	cvtColor(src, hsv, COLOR_RGB2HSV);
+	imshow("HSV", hsv);
+
+	Mat yuv;
+	cvtColor(src, yuv, COLOR_BGR2YUV);
+	imshow("YUV", yuv);
+
+	Mat YCrCb;
+	cvtColor(src, YCrCb, COLOR_BGR2YCrCb);
+	imshow("YCrCb", YCrCb);
+
+	Mat mask;
+	//cvtColor(src, mask, COLOR_BGR2HSV);
+	inRange(hsv, Scalar(35, 43, 46), Scalar(99, 255, 255), mask);
+	imshow("mask", mask);
+	Mat dst;
+	bitwise_not(src,src, dst, mask);
+	imshow("and", dst);
+```
+
+
+
+###  Python实现
+
+```python
+hsv = cv.cvtColor(src, cv.COLOR_BGR2HSV)
+cv.imshow("HSV", hsv)
+
+yuv = cv.cvtColor(src, cv.COLOR_BGR2YUV)
+cv.imshow("YUV", yuv)
+
+yCrCb = cv.cvtColor(src, cv.COLOR_BGR2YCrCb)
+cv.imshow("YCrCb", yCrCb)
+
+src2 = cv.imread("F:/timg.jpg")
+cv.imshow("Demo", src2)
+hsv2 = cv.cvtColor(src2, cv.COLOR_BGR2HSV)
+mask = cv.inRange(hsv2, (35, 43, 46), (77, 255, 255))
+cv.imshow("Mask", mask)
+dst = cv.bitwise_and(hsv2, hsv2, mask=mask)
+dst2 = cv.bitwise_not(hsv2, mask=mask)
+cv.imshow("Dst", dst)
+cv.imshow("Dst2", dst2)
+```
+
