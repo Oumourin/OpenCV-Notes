@@ -566,3 +566,73 @@ cv.imshow("Dst", dst)
 cv.imshow("Dst2", dst2)
 ```
 
+#  Day10
+
+##  像素统计
+
+####  知识点： 像素值统计
+
+- 最小(min) 
+- 最大(max)
+  - (单通道归一化将结果作为网络输入)
+- 均值(mean)  
+  - (作为分割依据 二值分割)
+- 标准方差(standard deviation)
+  - (扫描图像异常使用)
+
+#### API知识点
+
+- 最大最小值minMaxLoc
+- 计算均值与标准方差meanStdDev
+
+###  Python实现
+
+```python
+min, max, minLoc, maxLoc = cv.minMaxLoc(src)
+print("min: %.2f, max: %.2f"% (min, max))
+print("min loc: ", minLoc)
+print("max loc: ", maxLoc)
+
+means, stddev = cv.meanStdDev(src)
+print("mean: %.2f, stddev: %.2f"% (means, stddev))
+src[np.where(src < means)] = 0
+src[np.where(src > means)] = 255
+cv.imshow("binary", src)
+```
+
+输入为灰度图像
+
+np.where 对图像进行分割，即生成一个二值图像
+
+###  C++实现
+
+```c++
+	double minVal; 
+	double maxVal; 
+	Point minLoc; 
+	Point maxLoc;
+	minMaxLoc(src, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
+	printf("min: %.2f, max: %.2f \n", minVal, maxVal);
+	printf("min loc: (%d, %d) \n", minLoc.x, minLoc.y);
+	printf("max loc: (%d, %d)\n", maxLoc.x, maxLoc.y);
+
+
+	src = imread("D:/vcprojects/images/test.png");
+	Mat means, stddev;
+	meanStdDev(src, means, stddev);
+	printf("blue channel->> mean: %.2f, stddev: %.2f\n", means.at<double>(0, 0), stddev.at<double>(0, 0));
+	printf("green channel->> mean: %.2f, stddev: %.2f\n", means.at<double>(1, 0), stddev.at<double>(1, 0));
+	printf("red channel->> mean: %.2f, stddev: %.2f\n", means.at<double>(2, 0), stddev.at<double>(2, 0));
+```
+
+C++调用稍微麻烦，需要定义Point类
+
+minMaxLoc传递定义变量的引用
+
+meanStdDev读取一张三通道彩色图像，输出存入Mat中
+
+
+
+练习：
+
+C++实现二值化
