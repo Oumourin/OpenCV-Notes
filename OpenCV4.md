@@ -633,6 +633,29 @@ meanStdDev读取一张三通道彩色图像，输出存入Mat中
 
 
 
+meanStdDev输入图像为多通道时，以每个通道为基准计算均值和标准差
+
+meanStdDev返回Scalar矩阵，大小为1X1
+
 练习：
 
 C++实现二值化
+
+实现代码：
+
+```c++
+	int heigh = src.rows;
+	int width = src.cols;
+
+	for(int row = 0; row<heigh; row++)
+		for (int col = 0; col < width; col++)
+		{
+			Vec3b bgr = src.at<Vec3b>(row, col);
+			bgr[0] = bgr[0] < means.at<double>(0, 0) ? 0 : 255;
+			bgr[1] = bgr[1] < means.at<double>(1, 0) ? 0 : 255;
+			bgr[2] = bgr[2] < means.at<double>(2, 0) ? 0 : 255;
+			src.at<Vec3b>(row, col) = bgr;
+		}
+	imshow("Binary", src);
+```
+
