@@ -659,3 +659,116 @@ C++实现二值化
 	imshow("Binary", src);
 ```
 
+#  Day11
+
+##  图像归一化
+
+#### 知识点： 像素归一化
+
+OpenCV中提供了四种归一化的方法
+
+- NORM_MINMAX(最常用)
+- NORM_INF
+- NORM_L1
+- NORM_L2
+  最常用的就是NORM_MINMAX归一化方法。
+
+####  相关API函数：
+
+```C++
+normalize(
+InputArray 	src, // 输入图像
+InputOutputArray 	dst, // 输出图像
+double 	alpha = 1, // NORM_MINMAX时候低值
+double 	beta = 0, // NORM_MINMAX时候高值
+int 	norm_type = NORM_L2, // 只有alpha
+int 	dtype = -1, // 默认类型与src一致
+InputArray 	mask = noArray() // mask默认值为空
+)	
+```
+
+
+
+图像归一化前，需要进行类型转换，归一化后会产生浮点数，而默认的int8无法存储，会造成数据错误
+
+![归一化](https://image.nuccombat.cn/images/2019/03/31/FqoQhob7D9hwpLWT4Vap0Rlh65HQe1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zD07nkqFzGmc2USSHA8GWo2c9iq5w.png)
+
+###  Python实现
+
+```python
+gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
+
+# 转换为浮点数类型数组
+gray = np.float32(gray)
+print(gray)
+
+# scale and shift by NORM_MINMAX
+dst = np.zeros(gray.shape, dtype=np.float32)
+cv.normalize(gray, dst=dst, alpha=0, beta=1.0, norm_type=cv.NORM_MINMAX)
+print(dst)
+cv.imshow("NORM_MINMAX", np.uint8(dst*255))
+
+# scale and shift by NORM_INF
+dst = np.zeros(gray.shape, dtype=np.float32)
+cv.normalize(gray, dst=dst, alpha=1.0, beta=0, norm_type=cv.NORM_INF)
+print(dst)
+cv.imshow("NORM_INF", np.uint8(dst*255))
+
+# scale and shift by NORM_L1
+dst = np.zeros(gray.shape, dtype=np.float32)
+cv.normalize(gray, dst=dst, alpha=1.0, beta=0, norm_type=cv.NORM_L1)
+print(dst)
+cv.imshow("NORM_L1", np.uint8(dst*10000000))
+
+# scale and shift by NORM_L2
+dst = np.zeros(gray.shape, dtype=np.float32)
+cv.normalize(gray, dst=dst, alpha=1.0, beta=0, norm_type=cv.NORM_L2)
+print(dst)
+cv.imshow("NORM_L2", np.uint8(dst*10000))
+```
+
+* NORM_MINMAX	
+  * 必须做float32的转换
+  * alpha beta对应最小值最大值
+  * float32矩阵输出使用*255进行输出
+* NORM_INF
+  * 最大值归一化时只有alpha有意义
+
+###  C++实现
+
+```c++
+	Mat gray, gray_f;
+	cvtColor(src, gray, COLOR_BGR2GRAY);
+
+	// 转换为浮点数类型数组
+	gray.convertTo(gray, CV_32F);
+
+	// scale and shift by NORM_MINMAX
+	Mat dst = Mat::zeros(gray.size(), CV_32FC1);
+	normalize(gray, dst, 1.0, 0, NORM_MINMAX);
+	Mat result = dst * 255;
+	result.convertTo(dst, CV_8UC1);
+	imshow("NORM_MINMAX", dst);
+
+	// scale and shift by NORM_INF
+	normalize(gray, dst, 1.0, 0, NORM_INF);
+	result = dst * 255;
+	result.convertTo(dst, CV_8UC1);
+	imshow("NORM_INF", dst);
+
+	// scale and shift by NORM_L1
+	normalize(gray, dst, 1.0, 0, NORM_L1);
+	result = dst * 10000000;
+	result.convertTo(dst, CV_8UC1);
+	imshow("NORM_L1", dst);
+
+	// scale and shift by NORM_L2
+	normalize(gray, dst, 1.0, 0, NORM_L2);
+	result = dst * 10000;
+	result.convertTo(dst, CV_8UC1);
+	imshow("NORM_L2", dst);
+```
+
+*  C++下使用converTo进行数据类型转换
+* 如果不进行浮点数转换，系统会采取截断措施，造成无法显示
+
