@@ -772,3 +772,110 @@ cv.imshow("NORM_L2", np.uint8(dst*10000))
 *  C++下使用converTo进行数据类型转换
 * 如果不进行浮点数转换，系统会采取截断措施，造成无法显示
 
+#  Day12
+
+##  视频读写
+
+#### 知识点 和API
+
+VideoCapture 视频文件读取、摄像头读取、视频流读写
+
+VideoWriter 视频写出、文件保存
+
+- CAP_PROP_FRAME_HEIGHT
+
+- CAP_PROP_FRAME_WIDTH
+
+- CAP_PROP_FRAME_COUNT(帧数)
+
+- CAP_PROP_FPS（每秒帧数）
+
+  不支持音频编码与解码保存，不是一个音视频处理的库！主要是分析与解析视频内容。保存文件最大支持单个文件为2G
+
+###  Python实现
+
+```python
+capture = cv.VideoCapture("D:/vcprojects/images/768x576.avi")
+# capture = cv.VideoCapture(0) 打开摄像头
+height = capture.get(cv.CAP_PROP_FRAME_HEIGHT)
+width = capture.get(cv.CAP_PROP_FRAME_WIDTH)
+count = capture.get(cv.CAP_PROP_FRAME_COUNT)
+fps = capture.get(cv.CAP_PROP_FPS)
+print(height, width, count, fps)
+out = cv.VideoWriter("D:/test.mp4", cv.VideoWriter_fourcc('D', 'I', 'V', 'X'), 15,
+                     (np.int(width), np.int(height)), True)
+//VideoWriter writer("F:/test.mp4", VideoWriter::fourcc('D', 'I', 'V', 'X'), fps, s, true);
+//OpenCV4接口
+while True:
+    ret, frame = capture.read()
+    if ret is True:
+        cv.imshow("video-input", frame)
+        out.write(frame)
+        c = cv.waitKey(50)
+        if c == 27: # ESC
+            break
+    else:
+        break
+
+capture.release()
+out.release()
+```
+
+VideoWriter()：
+
+*  第一个参数输出路径
+* 第二个参数视频编码格式
+* 第三个参数帧数
+* 第四个参数视频尺寸
+* 是否边处理边解码
+
+capture.read()方法
+
+* 第一个返回值：ret布尔类型，标记是否结尾， False代表视频结束，True表示未结束
+* 第二个返回值：获取的视频帧
+
+waitKey（）方法
+
+在本代码中暂停50ms，如果接受到Esc结束视频读取
+
+*需要手动释放视频流！*
+
+### C++实现
+
+```C++
+	// 打开摄像头
+	// VideoCapture capture(0); 
+
+	// 打开文件
+	VideoCapture capture;
+	capture.open("D:/vcprojects/images/768x576.avi");
+	if (!capture.isOpened()) {
+		printf("could not read this video file...\n");
+		return -1;
+	}
+	Size S = Size((int)capture.get(CV_CAP_PROP_FRAME_WIDTH),
+		(int)capture.get(CV_CAP_PROP_FRAME_HEIGHT));
+	int fps = capture.get(CV_CAP_PROP_FPS);
+	printf("current fps : %d \n", fps);
+	VideoWriter writer("D:/test.mp4", CV_FOURCC('D', 'I', 'V', 'X'), fps, S, true);
+
+	Mat frame;
+	namedWindow("camera-demo", CV_WINDOW_AUTOSIZE);
+	while (capture.read(frame)) {
+		imshow("camera-demo", frame);
+		writer.write(frame);
+		char c = waitKey(50);
+		if (c == 27) {
+			break;
+		}
+	}
+	capture.release();
+	writer.release();
+```
+
+C++基本与Python一致
+
+注意:
+
+*OpenCV4下VideoWriter第二个参数fourcc改为了VideoWriter::fourcc*
+
