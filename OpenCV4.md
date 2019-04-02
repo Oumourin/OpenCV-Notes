@@ -879,3 +879,79 @@ C++基本与Python一致
 
 *OpenCV4下VideoWriter第二个参数fourcc改为了VideoWriter::fourcc*
 
+
+
+#  Day13
+
+##  图像翻转
+
+####   图像翻转(Image Flip)
+图像翻转的本质像素映射，OpenCV支持三种图像翻转方式
+
+- X轴翻转，flipcode = 0
+- Y轴翻转, flipcode = 1
+- XY轴翻转, flipcode = -1
+
+####  相关的API
+flip
+
+- src输入参数
+- dst 翻转后图像（Python使用接受返回值，C++需要预先定义）
+- flipcode
+
+本质是将像素点进行映射
+
+![图像翻转 左上为原图 右上为沿X轴翻转 左下沿Y轴翻转 右下沿XY轴翻转](https://image.nuccombat.cn/images/2019/04/02/75e1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDDuLi-0sG0UiJc8Q0Hfl7ULQeeFQ.jpg)
+
+###  C++实现
+
+```c++
+	Mat dst;
+	// X Flip 倒影
+	flip(src, dst, 0);
+	imshow("x-flip", dst);
+
+	// Y Flip 镜像
+	flip(src, dst, 1);
+	imshow("y-flip", dst);
+
+	// XY Flip 对角
+	flip(src, dst, -1);
+	imshow("xy-flip", dst);
+```
+
+### Python实现
+
+```python
+# X Flip 倒影
+dst1 = cv.flip(src, 0);
+cv.imshow("x-flip", dst1);
+
+# Y Flip 镜像
+dst2 = cv.flip(src, 1);
+cv.imshow("y-flip", dst2);
+
+# XY Flip 对角
+dst3 = cv.flip(src, -1);
+cv.imshow("xy-flip", dst3);
+
+# custom y-flip
+h, w, ch = src.shape
+dst = np.zeros(src.shape, src.dtype)
+for row in range(h):
+    for col in range(w):
+        b, g, r = src[row, col]
+        dst[row, w - col - 1] = [b, g, r]
+cv.imshow("custom-y-flip", dst)
+```
+
+custom为自己实现
+
+
+
+###  应用场景
+
+Android前置摄像头调整
+
+某些摄像头调整
+
