@@ -1060,3 +1060,111 @@ Size不为0时 fx fy不起作用 Size为0时 fx fy起作用
 
 [图像处理之Lanczos采样放缩算法]("https://blog.csdn.net/jia20003/article/details/17856859 ")
 
+
+
+#  Day15
+
+##  几何形状的绘制
+
+####  绘制几何形状
+
+- 绘制直线
+
+- 绘制圆
+
+- 绘制矩形
+
+- 绘制椭圆
+
+  
+
+- 填充几何形状
+
+  - OpenCV没有专门的填充方法，只是把绘制几何形状时候的线宽 - thickness参数值设置为负数即表示填充该几何形状或者使用参数CV_FILLED
+
+####  随机数方法
+
+RNG 表示OpenCV C++版本中的随机数对象，rng.uniform(a, b)生成[a, b)之间的随机数，包含a，但是不包含b。
+np.random.rand() 表示numpy中随机数生成，生成浮点数0～1的随机数, 包含0，不包含1。
+
+
+
+####  应用
+
+主要用于标注
+
+###  Python实现
+
+```Python
+cv.rectangle(image, (100, 100), (300, 300), (255, 0, 0), 2, cv.LINE_8, 0)
+# 矩形
+# 第一个参数 输入图像 第二个参数 矩形绘制相对于image的坐标 左上角点 第三个参数 右下角点 第四个参数 绘制颜色 第五个参数 线宽 两个像素 第五个参数 采取的绘制方法 LINE_8 八领域方法 LINE_AA 反锯齿方法 第六个参数 相对位移
+cv.circle(image, (256, 256), 50, (0, 0, 255), 2, cv.LINE_8, 0)
+# 圆心
+# 第二个参数指定圆心位置 第三个参数 半径 其他同矩形
+cv.ellipse(image, (256, 256), (150, 50), 360, 0, 360, (0, 255, 0), 2, cv.LINE_8, 0)
+# 椭圆
+# 第三个参数 长轴和短轴参数 第四个参数 角度 第五个参数 起始角度 第六个参数结束角度 其他同上
+cv.imshow("image", image)
+cv.waitKey(0)
+
+for i in range(100000):
+    image[:,:,:]= 0
+    # 擦除上次绘制结果
+    x1 = np.random.rand() * 512
+    y1 = np.random.rand() * 512
+    x2 = np.random.rand() * 512
+    y2 = np.random.rand() * 512
+    # rand返回0-1的随机数
+
+    b = np.random.randint(0, 256)
+    g = np.random.randint(0, 256)
+    r = np.random.randint(0, 256)
+    # cv.line(image, (np.int(x1), np.int(y1)), (np.int(x2), np.int(y2)), (b, g, r), 4, cv.LINE_8, 0)
+    cv.rectangle(image, (np.int(x1), np.int(y1)), (np.int(x2), np.int(y2)), (b, g, r), 1, cv.LINE_8, 0)
+    cv.imshow("image", image)
+    c = cv.waitKey(20)
+    if c == 27:
+        break  # ESC不
+```
+
+### C++实现
+
+```c++
+Mat image = Mat::zeros(Size(512, 512), CV_8UC3);
+	Rect rect(100, 100, 200, 200);
+	rectangle(image, rect, Scalar(255, 0, 0), 2, LINE_8, 0);
+	circle(image, Point(256, 256), 50, Scalar(0, 0, 255), 2, LINE_8, 0);
+	ellipse(image, Point(256, 256), Size(150, 50), 360, 0, 360, Scalar(0, 255, 0), 2, LINE_8, 0);
+	imshow("image", image);
+	waitKey(0);
+
+	RNG rng(0xFFFFFF);
+	// 随机数种子
+	image.setTo(Scalar(0, 0, 0));
+	// 生成黑色背景
+	for (int i = 0; i < 100000; i++) {
+		// image.setTo(Scalar(0, 0, 0));
+		int x1 = rng.uniform(0, 512);
+		int y1 = rng.uniform(0, 512);
+		int x2 = rng.uniform(0, 512);
+		int y2 = rng.uniform(0, 512);
+
+		int b = rng.uniform(0, 256);
+		int g = rng.uniform(0, 256);
+		int r = rng.uniform(0, 256);
+		line(image, Point(x1, y1), Point(x2, y2), Scalar(b, g, r), 1, LINE_AA, 0);
+		rect.x = x1;
+		rect.y = y1;
+		rect.width = x2 - x1;
+		rect.height = y2 - y1;
+		// rectangle(image, rect, Scalar(b, g, r), 1, LINE_AA, 0);
+		imshow("image", image);
+		char c = waitKey(20);
+		if (c == 27)
+			break;
+
+		imshow("image", image);
+	}
+```
+
