@@ -1052,19 +1052,11 @@ Size不为0时 fx fy不起作用 Size为0时 fx fy起作用
 
 ###  参考资料
 
-[图像处理之三种常见双立方插值算法]: https://blog.csdn.net/jia20003/article/details/40020775	"图像处理之三种常见双立方插值算法"
+ [图像处理之三种常见双立方插值算法]("https://blog.csdn.net/jia20003/article/details/40020775 ")
 
+[图像放缩之双立方插值]("https://blog.csdn.net/jia20003/article/details/6919845 ")
 
+[图像放缩之双线性内插值]("https://blog.csdn.net/jia20003/article/details/6915185 ")
 
-[图像放缩之双立方插值]: https://blog.csdn.net/jia20003/article/details/6919845	"图像放缩之双立方插值"
-
-
-
-[图像放缩之双线性内插值]: https://blog.csdn.net/jia20003/article/details/6915185	"图像放缩之双线性内插值"
-
-
-
-[图像处理之Lanczos采样放缩算法]: https://blog.csdn.net/jia20003/article/details/17856859	"图像处理之Lanczos采样放缩算法"
-
-
+[图像处理之Lanczos采样放缩算法]("https://blog.csdn.net/jia20003/article/details/17856859 ")
 
