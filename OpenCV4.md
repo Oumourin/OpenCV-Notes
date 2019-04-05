@@ -1168,3 +1168,121 @@ Mat image = Mat::zeros(Size(512, 512), CV_8UC3);
 	}
 ```
 
+
+
+#  Day16
+
+##  图像ROI与ROI操作
+
+#### 图像ROI
+图像的ROI(region of interest)是指图像中感兴趣区域、在OpenCV中图像设置图像ROI区域，实现只对ROI区域操作。
+
+1. 矩形ROI区域提取
+2. 矩形ROI区域copy
+
+3. 不规则ROI区域
+- ROI区域mask生成
+- 像素位 and操作
+- 提取到ROI区域
+- 加背景or操作
+- add 背景与ROI区域
+
+###  Python实现
+
+```python
+h, w = src.shape[:2]
+
+# 获取ROI
+cy = h//2
+cx = w//2
+roi = src[cy-100:cy+100,cx-100:cx+100,:]
+# roi内存区域依然是src
+cv.imshow("roi", roi)
+
+# copy ROI
+image = np.copy(roi)
+
+# modify ROI
+roi[:, :, 0] = 0
+cv.imshow("result", src)
+
+# modify copy roi
+image[:, :, 2] = 0
+cv.imshow("result", src)
+cv.imshow("copy roi", image)
+
+# 提取不规则ROI
+# example with ROI - generate mask
+src2 = cv.imread("D:/javaopencv/tinygreen.png");
+cv.imshow("src2", src2)
+hsv = cv.cvtColor(src2, cv.COLOR_BGR2HSV)
+mask = cv.inRange(hsv, (35, 43, 46), (99, 255, 255))
+
+# extract person ROI
+mask = cv.bitwise_not(mask)
+person = cv.bitwise_and(src2, src2, mask=mask);
+
+# generate background
+result = np.zeros(src2.shape, src2.dtype)
+result[:,:,0] = 255
+
+# 绿底换蓝底
+# combine background + person
+mask = cv.bitwise_not(mask)
+dst = cv.bitwise_or(person, result, mask=mask)
+dst = cv.add(dst, person)
+```
+
+不规则ROI区域提取：
+
+* 生成ROI区域mask(重点)
+* 利用原图与Mask与操作提取
+  * mask白色区域为保留下来的区域
+  * 方便均值 直方图计算等
+  * 变换背景图像
+
+###  C++实现
+
+```c++
+	// 获取ROI
+	int cy = h / 2;
+	int cx = w / 2;
+	Rect rect(cx - 100, cy - 100, 200, 200);
+	Mat roi = src(rect);
+	imshow("roi", roi);
+
+	Mat image = roi.clone();
+	// modify ROI
+	roi.setTo(Scalar(255, 0, 0));
+	imshow("result", src);
+
+	// modify copy roi
+	image.setTo(Scalar(0, 0, 255));
+	imshow("result", src);
+	imshow("copy roi", image);
+
+	// example with ROI - generate mask
+	Mat src2 = imread("D:/javaopencv/tinygreen.png");
+	imshow("src2", src2);
+	Mat hsv, mask;
+	cvtColor(src2, hsv, COLOR_BGR2HSV);
+	inRange(hsv, Scalar(35, 43, 46), Scalar(99, 255, 255), mask);
+	imshow("mask", mask);
+
+	// extract person ROI
+	Mat person;
+	bitwise_not(mask, mask);
+	bitwise_and(src2, src2, person, mask);
+	imshow("person", person);
+
+	// generate background
+	Mat result = Mat::zeros(src2.size(), src2.type());
+	result.setTo(Scalar(255, 0, 0));
+
+	// combine background + person
+	Mat dst;
+	bitwise_not(mask, mask);
+	bitwise_or(person, result, dst, mask);
+	add(dst, person, dst);
+```
+
