@@ -955,3 +955,116 @@ Android前置摄像头调整
 
 某些摄像头调整
 
+#  Day14
+
+##  图像插值
+
+####  最常见四种插值算法
+
+图像放大缩小时处理小数
+
+e.g 图像变为原来的0.75倍
+
+* INTER_NEAREST = 0(临近点插值)
+
+  * 图像映射新值时，用于计算新像素值在原坐标对应的值
+
+    10的图像缩放为0.75倍时 新图应取原图13位置的像素（13.3)
+
+    从整体图像上考虑
+
+* INTER_LINEAR = 1（双线性插值）
+
+  考虑X和Y轴，距离越近权重越大 
+
+  e.g 新像素点距离13 为0.3 14位0.7 根据距离计算权重 先考虑X轴再考虑Y轴，之后合并
+
+  实质为图像的一阶求导差异值
+
+* INTER_CUBIC = 2(双立方插值)
+
+  多项式拟合，三阶导数，求图像周围16个点坐标，计算量较大
+
+* INTER_LANCZOS4 = 4(卢卡斯插值)
+
+  能量场插值，求周围点权重，与原像素值求均值
+
+####  应用场景
+
+* 几何变换
+  * 透视 畸变 缩放等会产生新像素的情况
+  * 双立方和卢卡斯插值图像质量较好，临近点速度快
+* 透视变换
+* 插值计算新像素
+
+####  相关API
+
+*resize*
+
+实现图像放缩
+
+参数：
+
+原图像、输出图像、Size、x轴缩放大小、y轴缩放大小、插值方法
+
+Size优先级比缩放因子高
+
+###  C++实现
+
+```c++
+	int h = src.rows;
+	int w = src.cols;
+	float fx = 0.0, fy = 0.0;
+	Mat dst = Mat::zeros(src.size(), src.type());
+	resize(src, dst, Size(w * 2, h * 2), fx = 0, fy = 0, INTER_NEAREST);
+	imshow("INTER_NEAREST", dst);
+
+	resize(src, dst, Size(w * 2, h * 2), fx = 0, fy = 0, INTER_LINEAR);
+	imshow("INTER_LINEAR", dst);
+
+	resize(src, dst, Size(w * 2, h * 2), fx = 0, fy = 0, INTER_CUBIC); //双立方插值具有反锯齿功能 PS实现
+	imshow("INTER_CUBIC", dst);
+
+	resize(src, dst, Size(w * 2, h * 2), fx = 0, fy = 0, INTER_LANCZOS4);
+	imshow("INTER_LANCZOS4", dst);
+```
+
+###  Python实现
+
+```python
+h, w = src.shape[:2]
+print(h, w)
+dst = cv.resize(src, (w*2, h*2), fx=0.75, fy=0.75, interpolation=cv.INTER_NEAREST)
+cv.imshow("INTER_NEAREST", dst)
+
+dst = cv.resize(src, (w*2, h*2), interpolation=cv.INTER_LINEAR)
+cv.imshow("INTER_LINEAR", dst)
+
+dst = cv.resize(src, (w*2, h*2), interpolation=cv.INTER_CUBIC)
+cv.imshow("INTER_CUBIC", dst)
+
+dst = cv.resize(src, (w*2, h*2), interpolation=cv.INTER_LANCZOS4)
+cv.imshow("INTER_LANCZOS4", dst)
+
+```
+
+Size不为0时 fx fy不起作用 Size为0时 fx fy起作用
+
+###  参考资料
+
+[图像处理之三种常见双立方插值算法]: https://blog.csdn.net/jia20003/article/details/40020775	"图像处理之三种常见双立方插值算法"
+
+
+
+[图像放缩之双立方插值]: https://blog.csdn.net/jia20003/article/details/6919845	"图像放缩之双立方插值"
+
+
+
+[图像放缩之双线性内插值]: https://blog.csdn.net/jia20003/article/details/6915185	"图像放缩之双线性内插值"
+
+
+
+[图像处理之Lanczos采样放缩算法]: https://blog.csdn.net/jia20003/article/details/17856859	"图像处理之Lanczos采样放缩算法"
+
+
+
