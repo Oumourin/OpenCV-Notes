@@ -1286,3 +1286,179 @@ dst = cv.add(dst, person)
 	add(dst, person, dst);
 ```
 
+
+
+#  Day17
+
+##  图像直方图
+
+####  图像直方图的解释
+
+![](https://image.nuccombat.cn/images/2019/04/07/75e1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDpRcznf180gkcls2bDAxmxhGR6P4.jpg)
+
+图像直方图是图像像素值的统计学特征、计算代价较小，具有图像平移、旋转、缩放不变性等众多优点，广泛地应用于图像处理的各个领域，特别是灰度图像的阈值分割、基于颜色的图像检索以及图像分类、反向投影跟踪。常见的分为
+
+- 灰度直方图
+- 颜色直方图
+
+Bins是指直方图的大小范围， 对于像素值取值在0～255之间的，最少有256个bin，此外还可以有16、32、48、128等，256除以bin的大小应该是整数倍。
+
+一个Bins即为图像总的像素点个数
+
+图像直方图特征具有平移缩放旋转不变形
+
+利用归一化可以很好得出统计特征
+
+利用直方图可以进行灰度图像的分割，转变为二值图像
+
+利用直方图进行颜色检索 相似图像分类 图像的反向投影 图像均衡化等等
+
+####  OpenCV中相关API
+* calcHist(&bgr_plane[0], 1, 0, Mat(), b_hist, 1, bins, ranges)
+* cv.calcHist([image], [i], None, [256], [0, 256])
+
+###  Python实现
+
+```python
+def custom_hist(gray):
+    h, w = gray.shape
+    hist = np.zeros([256], dtype=np.int32)
+    for row in range(h):
+        for col in range(w):
+            pv = gray[row, col]
+            hist[pv] += 1
+
+    y_pos = np.arange(0, 256, 1, dtype=np.int32)
+    plt.bar(y_pos, hist, align='center', color='r', alpha=0.5)
+    plt.xticks(y_pos, y_pos)
+    plt.ylabel('Frequency')
+    plt.title('Histogram')
+
+    # plt.plot(hist, color='r')
+    # plt.xlim([0, 256])
+    plt.show()
+
+
+def image_hist(image):
+    cv.imshow("input", image)
+    color = ('blue', 'green', 'red')
+    for i, color in enumerate(color):
+        hist = cv.calcHist([image], [i], None, [256], [0, 256])
+        plt.plot(hist, color=color)
+        plt.xlim([0, 256])
+    plt.show()
+
+
+src = cv.imread("D:/vcprojects/images/flower.png")
+cv.namedWindow("input", cv.WINDOW_AUTOSIZE)
+gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
+cv.imshow("input", gray)
+# custom_hist(gray)
+image_hist(src)
+cv.waitKey(0)
+cv.destroyAllWindows()
+```
+
+
+
+###  C++实现
+
+```c++
+void showHistogram() {
+	// 三通道分离
+	vector<Mat> bgr_plane;
+	split(src, bgr_plane);
+	// 定义参数变量
+	const int channels[1] = { 0 };
+	const int bins[1] = { 256 };
+	float hranges[2] = { 0,255 };
+	const float* ranges[1] = { hranges };
+	Mat b_hist;
+	Mat g_hist;
+	Mat r_hist;
+	// 计算Blue, Green, Red通道的直方图
+	calcHist(&bgr_plane[0], 1, 0, Mat(), b_hist, 1, bins, ranges);
+	calcHist(&bgr_plane[1], 1, 0, Mat(), g_hist, 1, bins, ranges);
+	calcHist(&bgr_plane[2], 1, 0, Mat(), r_hist, 1, bins, ranges);
+	// 显示直方图
+	int hist_w = 512;
+	int hist_h = 400;
+	int bin_w = cvRound((double)hist_w / bins[0]);
+	Mat histImage = Mat::zeros(hist_h, hist_w, CV_8UC3);
+	// 归一化直方图数据
+	normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+	normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+	normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+	// 绘制直方图曲线
+	for (int i = 1; i < bins[0]; i++) {
+		line(histImage, Point(bin_w*(i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))),
+			Point(bin_w*(i), hist_h - cvRound(b_hist.at<float>(i))), Scalar(255, 0, 0), 2, 8, 0);
+		line(histImage, Point(bin_w*(i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
+			Point(bin_w*(i), hist_h - cvRound(g_hist.at<float>(i))), Scalar(0, 255, 0), 2, 8, 0);
+		line(histImage, Point(bin_w*(i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
+			Point(bin_w*(i), hist_h - cvRound(r_hist.at<float>(i))), Scalar(0, 0, 255), 2, 8, 0);
+	}
+	// 显示直方图
+	namedWindow("Histogram Demo", WINDOW_AUTOSIZE);
+	imshow("Histogram Demo", histImage);
+```
+
+- cvRound()：返回跟参数最接近的整数值，即四舍五入；
+- cvFloor()：返回不大于参数的最大整数值，即向下取整；
+- cvCeil()：返回不小于参数的最小整数值，即向上取整；
+
+
+
+#  Day18
+
+##  图像直方图均衡化
+
+图像直方图均衡化可以用于图像增强、对输入图像进行直方图均衡化处理，提升后续对象检测的准确率在OpenCV人脸检测的代码演示中已经很常见。此外对医学影像图像与卫星遥感图像也经常通过直方图均衡化来提升图像质量。
+
+OpenCV中，人脸检测Demo中，利用直方图均衡化对级联检测器的输入进行优化的效果
+
+####  相关API
+
+equalizeHist(src, dst)
+
+src: 灰度图像
+
+dst:输入图像
+
+####  直方图均衡化理解
+
+![](https://image.nuccombat.cn/images/2019/04/07/75e1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDtQCFqrBh3mKrJkF_fcifgdZScVI.jpg)
+
+K：八个级别
+
+Rk：级别值
+
+Nk：某一级别中含有的像素点数量
+
+Nk/N：占比
+
+第五列：计算新像素应匹配的值
+
+第六列：求新分配后像素比重
+
+###  Python实现
+
+````python
+src = cv.imread("D:/vcprojects/images/flower.png")
+gray = cv.cvtColor(src, cv.COLOR_BGR2GRAY)
+cv.namedWindow("input", cv.WINDOW_AUTOSIZE)
+cv.imshow("input", gray)
+dst = cv.equalizeHist(gray)
+cv.imshow("eh", dst)
+````
+
+###  C++实现
+
+```c++
+	Mat gray, dst;
+	cvtColor(src, gray, COLOR_BGR2GRAY);
+	imshow("input", gray);
+	equalizeHist(gray, dst);
+	imshow("eq", dst);
+```
+
