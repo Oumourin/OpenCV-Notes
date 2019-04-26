@@ -1462,3 +1462,228 @@ cv.imshow("eh", dst)
 	imshow("eq", dst);
 ```
 
+# Day19
+
+## 图像直方图比较
+
+ 图像直方图比较，就是计算两幅图像的直方图数据，比较两组数据的相似性，从而得到两幅图像之间的相似程度，直方图比较在早期的CBIR（以图搜图）中是应用很常见的技术手段，通常会结合边缘处理、词袋等技术一起使用。
+
+###  相关API
+
+OpenCV中直方图比较的API很简单
+
+compareHist(hist1, hist2, method)
+-常见比较方法有
+
+* 相关性 
+  * 常用，相关程度越高值越接近于1，程度越低越接近-1，未归一化
+* 卡方
+  * 欧氏距离，未归一化
+* 交叉
+  * 取最小值，准确度较低
+* 巴氏
+  * 常用，OpenCV中越接近于0越相似，越接近于1越不相似，实际中想反（OpenCV对公式进行了修正）
+
+相关性计算
+
+![](https://image.nuccombat.cn/images/2019/04/26/FnTXyRpjchuCq_uip5Pi4cOI0PADe1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDGS92peJEe1Q6vDXPWDp1HfMX13w.png)
+
+###  Python实现
+
+```python
+hsv1 = cv.cvtColor(src1, cv.COLOR_BGR2HSV)
+hsv2 = cv.cvtColor(src2, cv.COLOR_BGR2HSV)
+hsv3 = cv.cvtColor(src3, cv.COLOR_BGR2HSV)
+hsv4 = cv.cvtColor(src4, cv.COLOR_BGR2HSV)
+
+hist1 = cv.calcHist([hsv1], [0, 1], None, [60, 64], [0, 180, 0, 256])
+# [0, 1] 选择 0 1通道 None mask参数 [60, 64] bins 最后一个参数取值范围
+hist2 = cv.calcHist([hsv2], [0, 1], None, [60, 64], [0, 180, 0, 256])
+hist3 = cv.calcHist([hsv3], [0, 1], None, [60, 64], [0, 180, 0, 256])
+hist4 = cv.calcHist([hsv4], [0, 1], None, [60, 64], [0, 180, 0, 256])
+
+cv.normalize(hist1, hist1, 0, 1.0, cv.NORM_MINMAX, dtype=np.float32)
+# 浮点数归一化需要明示dtype
+cv.normalize(hist2, hist2, 0, 1.0, cv.NORM_MINMAX)
+cv.normalize(hist3, hist3, 0, 1.0, cv.NORM_MINMAX)
+cv.normalize(hist4, hist4, 0, 1.0, cv.NORM_MINMAX)
+
+methods = [cv.HISTCMP_CORREL, cv.HISTCMP_CHISQR,
+           cv.HISTCMP_INTERSECT, cv.HISTCMP_BHATTACHARYYA]
+str_method = ""
+for method in methods:
+    src1_src2 = cv.compareHist(hist1, hist2, method)
+    src3_src4 = cv.compareHist(hist3, hist4, method)
+    if method == cv.HISTCMP_CORREL:
+        str_method = "Correlation"
+    if method == cv.HISTCMP_CHISQR:
+        str_method = "Chi-square"
+    if method == cv.HISTCMP_INTERSECT:
+        str_method = "Intersection"
+    if method == cv.HISTCMP_BHATTACHARYYA:
+        str_method = "Bhattacharyya"
+```
+
+直方图比较 直方图反向投影 经验性处理需要将色彩空间转化为HSV 最有用的通道为H S通道
+
+###  C++实现
+
+```C++
+	Mat hsv1, hsv2, hsv3, hsv4;
+	cvtColor(src1, hsv1, COLOR_BGR2HSV);
+	cvtColor(src2, hsv2, COLOR_BGR2HSV);
+	cvtColor(src3, hsv3, COLOR_BGR2HSV);
+	cvtColor(src4, hsv4, COLOR_BGR2HSV);
+
+	int h_bins = 60; int s_bins = 64;
+	int histSize[] = { h_bins, s_bins };
+	float h_ranges[] = { 0, 180 };
+	float s_ranges[] = { 0, 256 };
+	const float* ranges[] = { h_ranges, s_ranges };
+	int channels[] = { 0, 1 };
+	Mat hist1, hist2, hist3, hist4;
+	calcHist(&hsv1, 1, channels, Mat(), hist1, 2, histSize, ranges, true, false);
+	calcHist(&hsv2, 1, channels, Mat(), hist2, 2, histSize, ranges, true, false);
+	calcHist(&hsv3, 1, channels, Mat(), hist3, 2, histSize, ranges, true, false);
+	calcHist(&hsv4, 1, channels, Mat(), hist4, 2, histSize, ranges, true, false);
+
+	normalize(hist1, hist1, 0, 1, NORM_MINMAX, -1, Mat());
+	normalize(hist2, hist2, 0, 1, NORM_MINMAX, -1, Mat());
+	normalize(hist3, hist3, 0, 1, NORM_MINMAX, -1, Mat());
+	normalize(hist4, hist4, 0, 1, NORM_MINMAX, -1, Mat());
+
+	for (int i = 0; i < 4; i++)
+	{
+		int compare_method = i;
+		double src1_src2 = compareHist(hist1, hist2, compare_method);
+		double src3_src4 = compareHist(hist3, hist4, compare_method);
+		printf(" Method [%d]  : src1_src2 : %f, src3_src4: %f,  \n", i, src1_src2, src3_src4);
+	}
+```
+
+
+
+#  Day20
+
+## 图像直方图反向投影
+
+文字解释：
+图像直方图反向投影是通过构建指定模板图像的二维直方图空间与目标的二维直方图空间，进行直方图数据归一化之后， 进行比率操作，对所有得到非零数值，生成查找表对原图像进行像素映射之后，再进行图像模糊输出的结果。
+
+直方图反向投影流程
+
+- 计算直方图
+- 计算比率R
+- LUT查找表
+- 卷积模糊
+- 归一化输出
+
+###  相关API
+
+- calcBackProject
+
+![](https://image.nuccombat.cn/images/2019/04/26/FspoceGUtiQDQ9kkZ58a5AeQ4pjde1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDzwrhN8raUyj6VjrwGlBwa4-umbo.png)
+
+参数1：原图像
+
+参数2： 要处理的图像数量
+
+参数3： 要处理的通道
+
+参数4： 输入图像
+
+参数5： 输出图像
+
+参数6：范围
+
+参数7：缩放比例
+
+直方图反向投影效果
+
+![](https://image.nuccombat.cn/images/2019/04/26/75e1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDG_RqZTWcREhkkjpaaOupFWCJh7I.jpg)
+
+###  Python实现
+
+```Python
+import cv2 as cv
+import numpy as np
+from matplotlib import pyplot as plt
+
+
+def back_projection_demo():
+    sample = cv.imread("D:/javaopencv/sample.png")
+    # hist2d_demo(sample)
+    target = cv.imread("D:/javaopencv/target.png")
+    # hist2d_demo(target)
+    roi_hsv = cv.cvtColor(sample, cv.COLOR_BGR2HSV)
+    target_hsv = cv.cvtColor(target, cv.COLOR_BGR2HSV)
+
+    # show images
+    cv.imshow("sample", sample)
+    cv.imshow("target", target)
+
+    roiHist = cv.calcHist([roi_hsv], [0, 1], None, [32, 32], [0, 180, 0, 256])
+    cv.normalize(roiHist, roiHist, 0, 255, cv.NORM_MINMAX)
+    dst = cv.calcBackProject([target_hsv], [0, 1], roiHist, [0, 180, 0, 256], 1)
+    cv.imshow("backProjectionDemo", dst)
+
+
+def hist2d_demo(image):
+    hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
+    hist = cv.calcHist([hsv], [0, 1], None, [32, 32], [0, 180, 0, 256])
+    dst = cv.resize(hist, (400, 400))
+    cv.imshow("image", image)
+    cv.imshow("hist", dst)
+    plt.imshow(hist, interpolation='nearest')
+    plt.title("2D Histogram")
+    plt.show()
+
+```
+
+###  C++实现
+
+```c++
+const int bins = 256;
+Mat src;
+const char* winTitle = "input image";
+void backProjection_demo(Mat &image, Mat &model);
+int main(int argc, char** argv) {
+	Mat src = imread("D:/javaopencv/target.png");
+	Mat model = imread("D:/javaopencv/sample.png");
+	if (src.empty() || model.empty()) {
+		printf("could not load image...\n");
+		return 0;
+	}
+	namedWindow(winTitle, WINDOW_AUTOSIZE);
+	imshow(winTitle, src);
+	imshow("model", model);
+
+	backProjection_demo(src, model);
+	waitKey(0);
+	return 0;
+}
+
+void backProjection_demo(Mat &image, Mat &model) {
+	Mat model_hsv, image_hsv;
+	cvtColor(model, model_hsv, COLOR_BGR2HSV);
+	cvtColor(image, image_hsv, COLOR_BGR2HSV);
+
+	// 定义直方图参数与属性
+	int h_bins = 32; int s_bins = 32;
+	int histSize[] = { h_bins, s_bins };
+	// hue varies from 0 to 179, saturation from 0 to 255
+	float h_ranges[] = { 0, 180 };
+	float s_ranges[] = { 0, 256 };
+	const float* ranges[] = { h_ranges, s_ranges };
+	int channels[] = { 0, 1 };
+	Mat roiHist;
+	calcHist(&model_hsv, 1, channels, Mat(), roiHist, 2, histSize, ranges, true, false);
+	normalize(roiHist, roiHist, 0, 255, NORM_MINMAX, -1, Mat());
+	MatND backproj;
+	calcBackProject(&image_hsv, 1, channels, roiHist, backproj, ranges, 1.0);
+	imshow("BackProj", backproj);
+}
+```
+
+
+
