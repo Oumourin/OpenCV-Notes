@@ -1687,3 +1687,158 @@ void backProjection_demo(Mat &image, Mat &model) {
 
 
 
+
+
+#  Day21
+
+##  图像卷积操作
+
+​       图像卷积可以看成是一个窗口区域在另外一个大的图像上移动，对每个窗口覆盖的区域都进行点乘得到的值作为中心像素点的输出值。窗口的移动是从左到右，从上到下。窗口可以理解成一个指定大小的二维矩阵，里面有预先指定的值。
+
+### 相关API
+
+* C++版本
+  * blur(
+    InputArray 	src, // 输入
+    OutputArray 	dst, 输出
+    Size 	ksize, // 窗口大小
+    Point 	anchor = Point(-1,-1), // 默认值
+    int 	borderType = BORDER_DEFAULT // 默认值
+    )
+
+* Python版本
+  * dst	= cv.blur(	src, ksize[, dst[, anchor[, borderType]]]	)
+
+![](https://image.nuccombat.cn/images/2019/04/28/FgNmE4eNH09Q2sysTYU0pkKpDq7We1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDlyClBaKe6LNEwF2mWU-uN7bhNWA.png)
+
+卷积核需要和窗口完全重合才能运算，卷积中间值为卷积核和窗口的点积之和求平均得到，TF中，为了处理边缘窗口，采用补零操作
+
+### C++实现
+
+```C++
+	int h = src.rows;
+	int w = src.cols;
+
+	// 3x3 均值模糊，自定义版本实现
+	Mat dst = src.clone();
+	for (int row = 1; row < h-1; row++) {
+		for (int col = 1; col < w-1; col++) {
+			Vec3b p1 = src.at<Vec3b>(row-1, col-1);
+			Vec3b p2 = src.at<Vec3b>(row-1, col);
+			Vec3b p3 = src.at<Vec3b>(row-1, col+1);
+			Vec3b p4 = src.at<Vec3b>(row, col-1);
+			Vec3b p5 = src.at<Vec3b>(row, col);
+			Vec3b p6 = src.at<Vec3b>(row, col+1);
+			Vec3b p7 = src.at<Vec3b>(row+1, col-1);
+			Vec3b p8 = src.at<Vec3b>(row+1, col);
+			Vec3b p9 = src.at<Vec3b>(row+1, col+1);
+
+			int b = p1[0] + p2[0] + p3[0] + p4[0] + p5[0] + p6[0] + p7[0] + p8[0] + p9[0];
+			int g = p1[1] + p2[1] + p3[1] + p4[1] + p5[1] + p6[1] + p7[1] + p8[1] + p9[1];
+			int r = p1[2] + p2[2] + p3[2] + p4[2] + p5[2] + p6[2] + p7[2] + p8[2] + p9[2];
+
+			dst.at<Vec3b>(row, col)[0] = saturate_cast<uchar>(b / 9);
+			dst.at<Vec3b>(row, col)[1] = saturate_cast<uchar>(g / 9);
+			dst.at<Vec3b>(row, col)[2] = saturate_cast<uchar>(r / 9);
+		}
+	}
+	imshow("blur", dst);
+	imwrite("D:/result.png", dst);
+
+	// OpenCV 均值模糊
+	Mat result;
+	blur(src, result, Size(15, 15), Point(-1, -1), 4);
+	// Size为卷积核大小 OpenCV中采用积分图来进行优化计算 Point为中心像素点位置 4位边缘处理方法
+	imshow("result", result);
+```
+
+###  Python
+
+```python
+def custom_blur(src):
+    h, w, ch = src.shape
+    print("h , w, ch", h, w, ch)
+    result = np.copy(src)
+    for row in range(1, h-1, 1):
+        for col in range(1, w-1, 1):
+            v1 = np.int32(src[row-1, col-1])
+            v2 = np.int32(src[row-1, col])
+            v3 = np.int32(src[row-1, col+1])
+            v4 = np.int32(src[row, col-1])
+            v5 = np.int32(src[row, col])
+            v6 = np.int32(src[row, col+1])
+            v7 = np.int32(src[row+1, col-1])
+            v8 = np.int32(src[row+1, col])
+            v9 = np.int32(src[row+1, col+1])
+
+            b = v1[0] + v2[0] + v3[0] + v4[0] + v5[0] + v6[0] + v7[0] + v8[0] + v9[0];
+            g = v1[1] + v2[1] + v3[1] + v4[1] + v5[1] + v6[1] + v7[1] + v8[1] + v9[1];
+            r = v1[2] + v2[2] + v3[2] + v4[2] + v5[2] + v6[2] + v7[2] + v8[2] + v9[2];
+            result[row, col] = [b//9, g//9, r//9]
+    cv.imshow("result", result)
+
+
+src = cv.imread("D:/vcprojects/images/lena.png")
+cv.namedWindow("input", cv.WINDOW_AUTOSIZE)
+cv.imshow("input", src)
+dst = cv.blur(src, (15, 15))
+cv.imshow("blur", dst)
+custom_blur(src)
+```
+
+
+
+* 卷积核一般为奇数，偶数为少部分情况，中心需要自定义
+
+#  Day22
+
+##  图像均值与高斯模糊
+
+​       均值模糊 是卷积核的系数完全一致，高斯模糊考虑了中心像素距离的影响，对距离中心像素使用高斯分布公式生成不同的权重系数给卷积核，然后用此卷积核完成图像卷积得到输出结果就是图像高斯模糊之后的输出。
+
+###  相关API
+
+```c++
+void GaussianBlur(
+InputArray src, 
+OutputArray dst, 
+Size ksize, // Ksize为高斯滤波器窗口大小 Size为（0,0）将会从SimgaX开始计算核函数，不为零时，会从Size开始计算核函数
+double sigmaX, // X方向滤波系数
+double sigmaY=0, // Y方向滤波系数 sigmaY默认时，自动等于sigmaX
+    // sigma越大模糊越厉害 窗口越大模糊越厉害
+int borderType=BORDER_DEFAULT // 默认边缘插值方法
+)
+```
+
+当Size(0, 0)就会从sigmax开始计算生成高斯卷积核系数，当时size不为零是优先从size开始计算高斯卷积核系数
+
+![](https://image.nuccombat.cn/images/2019/04/28/Fu9US8uN_k6wN1sWjCfG1f-jmbcae1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDF5ScKMtVUM9WrOluiie8prE9x_I.png)
+
+高斯模糊卷积核的权重根据到中心距离生成（依赖高斯分布生成）
+
+![](https://image.nuccombat.cn/images/2019/04/28/Fvp2G4cWEafYn55baTU8i80vqsjUe1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDvuqDa1dBhIc3QZddy910hrmhg0A.png)
+
+极值出现在（x, y）=(0, 0)
+
+高斯核为3X3时，取值为X-1到X+1 Y-1到Y+1，上图表格左图为高斯核函数原始值，右图为归一化结果，高斯模糊和均值模糊相比更清晰（中心权重更高）
+
+###  C++实现
+
+```c++
+	Mat dst1, dst2;
+	blur(src, dst1, Size(5, 5), Point(-1, -1), 4);
+	GaussianBlur(src, dst2, Size(5, 5), 15, 0, 4);
+
+
+	imshow("blur", dst1);
+	imshow("gaussian blur", dst2);
+```
+
+###  Python实现
+
+```Python
+dst1 = cv.blur(src, (5, 5))
+dst2 = cv.GaussianBlur(src, (5, 5), sigmaX=15)
+dst3 = cv.GaussianBlur(src, (0, 0), sigmaX=15)
+```
+
