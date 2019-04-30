@@ -1842,3 +1842,195 @@ dst2 = cv.GaussianBlur(src, (5, 5), sigmaX=15)
 dst3 = cv.GaussianBlur(src, (0, 0), sigmaX=15)
 ```
 
+
+
+
+
+# Day23
+
+## 中值滤波
+
+​        中值滤波本质上是统计排序滤波器的一种，中值滤波对图像特定噪声类型（椒盐噪声）会取得比较好的去噪效果，也是常见的图像去噪声与增强的方法之一。中值滤波也是窗口在图像上移动，其覆盖的对应ROI区域下，所有像素值排序，取中值作为中心像素点的输出值
+
+其余的统计学滤波器：极大值 极小值滤波器
+
+中值滤波的原理：
+
+![](https://image.nuccombat.cn/images/2019/04/30/FiCSQI5eLGFordElFpylXiCSqJ0Ie1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDLVLljjEsXLc3Xcb1qDaAksSYfkQ.png)
+
+![](https://image.nuccombat.cn/images/2019/04/30/FiH3JLrkVwpjENpk43O3X-74M49Qe1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zDh6dmIxLX4KgMgcEXuAxPEXLe5Sk.png)
+
+## 相关API
+
+OpenCV中值滤波API函数如下：
+
+C++:
+
+```c++
+medianBlur	(	
+InputArray 	src,
+OutputArray 	dst,
+int 	ksize // 必须是奇数，而且必须大于1
+)
+
+```
+
+Python:
+
+```python
+dst = cv.medianBlur(	src, ksize[, dst]	)
+```
+
+###  Python实现
+
+````python
+dst = cv.medianBlur(src, 5)
+cv.imshow("blur ksize=5", dst)
+````
+
+###  C++实现
+
+```c++
+	Mat dst;
+	medianBlur(src, dst, 5);
+	imshow("medianblur ksize=5", dst);
+```
+
+
+
+#  Day24
+
+##  图像噪声
+
+图像噪声产生的原因很复杂，有的可能是数字信号在传输过程中发生了丢失或者受到干扰，有的是成像设备或者环境本身导致成像质量不稳定，反应到图像上就是图像的亮度与颜色呈现某种程度的不一致性。从噪声的类型上，常见的图像噪声可以分为如下几种：
+
+- 椒盐噪声， 
+是一种随机在图像中出现的稀疏分布的黑白像素点， 对椒盐噪声一种有效的去噪手段就是图像中值滤波
+
+- 高斯噪声/符合高斯分布
+一般会在数码相机的图像采集(acquisition)阶段发生,这个时候它的物理/电/光等各种信号都可能导致产生高斯分布噪声。
+
+- 均匀分布噪声
+均匀/规则噪声一般都是因为某些规律性的错误导致的
+
+##  代码演示
+
+- 图像椒盐噪声生成
+- 图像高斯噪声生成
+
+### C++实现噪声
+
+```c++
+void add_salt_pepper_noise(Mat &image) {
+	RNG rng(12345);
+	int h = image.rows;
+	int w = image.cols;
+	int nums = 10000;
+	for (int i = 0; i < nums; i++) {
+		int x = rng.uniform(0, w);
+		int y = rng.uniform(0, h);
+		if (i % 2 == 1) {
+			image.at<Vec3b>(y, x) = Vec3b(255, 255, 255);
+		}
+		else {
+			image.at<Vec3b>(y, x) = Vec3b(0, 0, 0);
+		}
+	}
+	imshow("salt pepper", image);
+}
+
+void gaussian_noise(Mat &image) {
+	Mat noise = Mat::zeros(image.size(), image.type());
+	randn(noise, (15, 15, 15), (30, 30, 30));
+    // 15是产生的噪声均值，30是产生的噪声的方差
+	Mat dst;
+	add(image, noise, dst);
+	imshow("gaussian noise", dst);
+}
+```
+
+
+
+###  Python实现噪声
+
+```python
+def add_salt_pepper_noise(image):
+    h, w = image.shape[:2]
+    nums = 10000
+    rows = np.random.randint(0, h, nums, dtype=np.int)
+    cols = np.random.randint(0, w, nums, dtype=np.int)
+    for i in range(nums):
+        if i % 2 == 1:
+            image[rows[i], cols[i]] = (255, 255, 255)
+        else:
+            image[rows[i], cols[i]] = (0, 0, 0)
+    return image
+
+
+def gaussian_noise(image):
+    noise = np.zeros(image.shape, image.dtype)
+    m = (15, 15, 15)
+    s = (30, 30, 30)
+    cv.randn(noise, m, s)
+    dst = cv.add(image, noise)
+    cv.imshow("gaussian noise", dst)
+    return dst
+```
+
+
+
+#  Day25
+
+##  图像去噪声
+
+图像去噪声在OCR、机器人视觉与机器视觉领域应用开发中是重要的图像预处理手段之一，对图像二值化与二值分析很有帮助，OpenCV中常见的图像去噪声的方法有
+- 均值去噪声
+- 高斯模糊去噪声
+- 非局部均值去噪声
+- 双边滤波去噪声
+- 形态学去噪声
+
+![](https://image.nuccombat.cn/images/2019/04/30/FtXdxPyYuMD69s1nTDMnDZkEwoDme1906272000tokenkIxbL07-8jAj8w1n4s9zv64FuZZNEATmlU_Vm6zD8xIuJARZsf4fJ3sl-NhC37ZmX1E.png)
+
+均值 高斯滤波器一般选择3X3的卷积核，最多使用5X5的卷积核，过大的Kernel会导致图像细节丢失
+
+###  Python实现
+
+```python
+src = cv.imread("D:/vcprojects/images/example.png")
+cv.imshow("input", src)
+h, w = src.shape[:2]
+src = gaussian_noise(src)
+
+result1 = cv.blur(src, (5, 5))
+cv.imshow("result-1", result1)
+
+result2 = cv.GaussianBlur(src, (5, 5), 0)
+cv.imshow("result-2", result2)
+
+result3 = cv.medianBlur(src, 5)
+cv.imshow("result-3", result3)
+
+result4 = cv.fastNlMeansDenoisingColored(src, None, 15, 15, 10, 30)
+# 两个版本对应灰度图和多通道图， 15 15分别是颜色和亮度分量的阈值，一般设置为10，最多为15, 10 30搜索窗口和模板窗口大小 两者最常见比例为1比3（模板比搜索）模板窗口不能大过搜索窗口
+cv.imshow("result-4", result4)
+```
+
+###  C++实现
+
+```c++
+	Mat result1, result2, result3, result4;
+	blur(src, result1, Size(5, 5));
+	imshow("result-1", result1);
+
+	GaussianBlur(src, result2, Size(5, 5), 0);
+	imshow("result-2", result2);
+
+	medianBlur(src, result3, 5);
+	// keysize为奇数并且一定大于零
+	imshow("result-3", result3);
+
+	fastNlMeansDenoisingColored(src, result4, 15, 15, 10, 30);
+	imshow("result-4", result4);
+```
+
